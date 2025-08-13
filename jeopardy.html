@@ -69,7 +69,7 @@
     <!-- PLAY PANEL -->
     <section id="panel-play" role="tabpanel" aria-labelledby="tab-play" hidden>
       <div class="board-wrap">
-        <div class="small">Tips: klicka en ruta för att visa frågan. <span class="kbd">Mellanslag</span> = visa/dölj svar, <span class="kbd">T</span> = starta/stoppa timer, <span class="kbd">Esc</span> = stäng.</div>
+        <div class="small">Tips: klicka en ruta för att visa svaret. <span class="kbd">Mellanslag</span> = visa/dölj fråga, <span class="kbd">T</span> = starta/stoppa timer, <span class="kbd">Esc</span> = stäng.</div>
         <div class="board" id="board" style="--cols:5"></div>
       </div>
 
@@ -120,7 +120,7 @@
       <div class="modal-title" id="dlg-title">Ruta</div>
       <div class="modal-controls">
         <button class="btn secondary" id="btn-timer">⏱ <span class="timer" id="timer">30</span>s</button>
-        <button class="btn secondary" id="btn-toggle-answer">Visa svar</button>
+        <button class="btn secondary" id="btn-toggle-answer">Visa fråga</button>
         <button class="btn bad" id="btn-close">Stäng</button>
       </div>
     </div>
@@ -422,8 +422,8 @@
     function openClue(c,r){
       const clue = game.categories[c]?.clues?.[r]; if(!clue || used[`${c}-${r}`]) return;
       current = {c,r}; dlgTitle.textContent = `${game.categories[c].title} – ${clue.value}p`;
-      dlgQ.textContent = clue.question || '(ingen ledtråd angiven)';
-      dlgA.textContent = clue.answer || '(inget svar angivet)'; dlgA.classList.remove('revealed');
+      dlgQ.textContent = clue.answer || '(inget svar angivet)';
+      dlgA.textContent = clue.question || '(ingen fråga angiven)'; dlgA.classList.remove('revealed');
       ddBanner.hidden = !clue.dd; awardPointsEl.value = clue.value; renderPlayersInline();
       remaining = 30; timerEl.textContent = remaining; stopTimer();
 
@@ -443,7 +443,7 @@
     function startTimer(){ if(timer) return; timer = setInterval(()=>{ remaining--; timerEl.textContent = remaining; if(remaining<=0){ stopTimer(); } }, 1000); }
     function stopTimer(){ if(timer){ clearInterval(timer); timer=null; } }
     document.getElementById('btn-close').onclick = ()=> closeClue(false);
-    toggleAnswerBtn.onclick = ()=>{ dlgA.classList.toggle('revealed'); toggleAnswerBtn.textContent = dlgA.classList.contains('revealed')? 'Dölj svar' : 'Visa svar'; };
+    toggleAnswerBtn.onclick = ()=>{ dlgA.classList.toggle('revealed'); toggleAnswerBtn.textContent = dlgA.classList.contains('revealed')? 'Dölj fråga' : 'Visa fråga'; };
     timerBtn.onclick = ()=>{ if(timer) stopTimer(); else startTimer(); };
     dlg.addEventListener('keydown', (e)=>{
       if(e.key===' '){ e.preventDefault(); toggleAnswerBtn.click(); }
