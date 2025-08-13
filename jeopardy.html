@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Jeopardy! – Lokal webbapp (svenska) + LAN-buzzer</title>
+  <style>
+    :root{
+      --bg:#0b1020;       /* mörk blåsvart */
+      --primary:#1e2a5a;  /* djup blå */
+      --accent:#ffd84d;   /* gul */
+      --accent-2:#ff9f1c; /* orange */
+      --text:#eef2ff;     /* nästan vit */
+      --muted:#9aa3b2;    /* gråblå */
+      --tile:#16305a;     /* kakelblå */
+      --tile-used:#0f1f3b;/* använd kakel */
+      --ok:#1db954;       /* grön */
+      --bad:#e11d48;      /* röd */
+      --card:#101935;
+      --shadow:0 6px 24px rgba(0,0,0,.24), 0 2px 8px rgba(0,0,0,.35);
+      --radius:16px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, sans-serif;
+      background:linear-gradient(180deg, #070b18 0%, #0b1020 100%);
+      color:var(--text);
+    }
+    header{
+      display:grid; grid-template-columns: 1fr auto auto; gap:12px; align-items:center;
+      padding:16px clamp(12px, 4vw, 28px);
+      background:rgba(15,22,44,.7); backdrop-filter: blur(8px);
+      position:sticky; top:0; z-index:30; border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    .brand{display:flex; align-items:center; gap:14px}
+    .brand h1{font-size:clamp(18px, 2.2vw, 26px); margin:0; letter-spacing:.4px}
+    .tabs{display:flex; gap:8px; flex-wrap:wrap}
+    .tab{ border:1px solid rgba(255,255,255,.12); color:var(--text); background:transparent; padding:10px 14px; border-radius:999px; cursor:pointer; transition: all .2s ease; font-weight:600; }
+    .tab[aria-selected="true"]{background:var(--primary); border-color:transparent}
+    .actions{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
+    .btn{ border:none; background:var(--accent); color:#1b1300; font-weight:700; padding:10px 14px; border-radius:10px; cursor:pointer; box-shadow:var(--shadow); }
+    .btn.secondary{ background:#1b2547; color:var(--text); box-shadow:none; border:1px solid rgba(255,255,255,.12)}
+    .btn.ghost{ background:transparent; color:var(--text); box-shadow:none; border:1px dashed rgba(255,255,255,.2)}
+    .btn.ok{ background:var(--ok); color:#001b08 }
+    .btn.bad{ background:var(--bad); color:#fff }
+    .btn:disabled{opacity:.5; cursor:not-allowed}
+
+    main{padding:22px clamp(12px, 4vw, 28px); display:grid; gap:22px; align-content:start}
+
+    /* Network */
+    .net{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end }
+    .net .status{ display:inline-flex; align-items:center; gap:6px; font-weight:700; }
+    .dot{ width:10px; height:10px; border-radius:50%; display:inline-block; background:#555 }
+    .dot.ok{ background:#22c55e }
+    .dot.bad{ background:#ef4444 }
+    .input, textarea, select{
+      width:100%; padding:8px 10px; border-radius:10px; border:1px solid rgba(255,255,255,.14); background:#0e1735; color:var(--text);
+    }
+
+    /* Scoreboard */
+    .scoreboard{ display:flex; gap:12px; flex-wrap:wrap; align-items:stretch }
+    .team{ background:var(--card); border:1px solid rgba(255,255,255,.08); border-radius:var(--radius); padding:12px; min-width:200px; box-shadow:var(--shadow); display:grid; gap:10px; align-content:start }
+    .team header{position:unset; background:transparent; padding:0; border:none}
+    .team-name{ font-weight:800; font-size:18px; outline:none; border:none; width:100%; color:var(--text); background:transparent; border-bottom:1px dashed rgba(255,255,255,.18); padding-bottom:4px }
+    .score{font-size:28px; font-weight:900}
+    .score-controls{display:flex; gap:8px; flex-wrap:wrap}
+    .score-controls input{width:90px; background:#0e1735; color:var(--text); border:1px solid rgba(255,255,255,.12); border-radius:8px; padding:8px}
+
+    /* Board */
+    .board-wrap{ display:grid; gap:12px }
+    .board{ display:grid; gap:10px; align-content:start; grid-template-columns: repeat(var(--cols,5), minmax(0,1fr)); }
+    .category{ background:linear-gradient(180deg, #1a3163, #10244b); border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:10px; text-align:center; font-weight:800; text-transform:uppercase; min-height:66px; display:flex; align-items:center; justify-content:center }
+    .tile{ background:linear-gradient(180deg, #183a73, #112b55); border:1px solid rgba(255,255,255,.12); border-radius:12px; min-height:86px; display:flex; align-items:center; justify-content:center; font-size:clamp(18px, 2.2vw, 30px); font-weight:900; letter-spacing:.5px; cursor:pointer; user-select:none; transition: transform .05s ease, background .2s ease, opacity .2s ease; }
+    .tile:hover{ transform: translateY(-1px) }
+    .tile.used{background:var(--tile-used); opacity:.55; cursor:not-allowed}
+
+    /* Editor */
+    .editor-grid{ display:grid; grid-template-columns: 1fr; gap:14px }
+    .editor-toolbar{ display:flex; gap:10px; flex-wrap:wrap; align-items:center }
+    .fieldset{ background:var(--card); border:1px solid rgba(255,255,255,.08); border-radius:var(--radius); box-shadow:var(--shadow); padding:12px; }
+    .fieldset h3{ margin:.2rem 0 .8rem 0 }
+    .cat-editor{ display:grid; gap:10px }
+    .cat-list{ display:grid; gap:14px }
+    .cat-card{ background:#111c3c; border:1px solid rgba(255,255,255,.08); border-radius:14px; padding:12px; display:grid; gap:8px }
+    .cat-row{ display:grid; grid-template-columns: 1fr 1fr 1fr auto; gap:8px; align-items:center }
+    textarea{ min-height:60px; resize:vertical }
+    .tile-form{ display:grid; grid-template-columns: 100px 1fr 1fr 90px; gap:8px; align-items:start }
+    .small{ font-size:12px; color:var(--muted) }
+
+    /* Modal */
+    dialog{ border:none; border-radius:18px; width:min(980px, 92vw); background:linear-gradient(180deg, #0e1a39, #0c1530); color:var(--text); box-shadow:var(--shadow); }
+    dialog::backdrop{ background:rgba(3,7,20,.7); backdrop-filter: blur(2px) }
+    .modal-body{ display:grid; gap:16px; padding:16px }
+    .modal-header{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 16px; border-bottom:1px solid rgba(255,255,255,.08) }
+    .modal-title{ font-weight:900; letter-spacing:.3px }
+    .q{ font-size:clamp(22px, 2.4vw, 30px); line-height:1.5; background:#0c1f40; padding:14px; border-radius:12px; border:1px solid rgba(255,255,255,.08) }
+    .a{ display:none; padding:12px; border-radius:12px; background:#0c254f; border:1px solid rgba(255,255,255,.08) }
+    .a.revealed{ display:block }
+    .award{ display:flex; gap:8px; flex-wrap:wrap; align-items:center }
+    .players-inline{ display:flex; gap:8px; flex-wrap:wrap }
+    .timer{ font-variant-numeric:tabular-nums; font-weight:800 }
+
+    .buzzer-controls{ display:grid; gap:10px; background:#0c1a39; border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:12px }
+    .buzzer-row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap }
+    .btn-row{ display:flex; gap:10px; flex-wrap:wrap }
+
+    /* Buzzer */
+    #panel-buzzer{ display:grid; place-items:center }
+    .buzzer-hero{ display:grid; gap:18px; place-items:center; width:100% }
+    .buzz-btn{ font-size: clamp(28px, 8vw, 72px); padding: clamp(18px, 4vw, 28px) clamp(28px, 8vw, 64px); border-radius:1000px; background:radial-gradient(circle at 30% 30%, #ff7676, #e11d48); border:none; color:#fff; font-weight:900; box-shadow:0 10px 30px rgba(225,29,72,.55); cursor:pointer; }
+    .buzz-btn:disabled{ filter:grayscale(1); opacity:.6; cursor:not-allowed }
+    .buzz-status{ font-size:clamp(16px, 2.2vw, 22px); color:var(--muted) }
+
+    /* Footer */
+    footer{ text-align:center; color:var(--muted); padding:12px }
+    .kbd{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; background:#09102a; border:1px solid rgba(255,255,255,.14); border-radius:8px; padding:2px 6px }
+
+    @media (min-width: 980px){ .editor-grid{ grid-template-columns: 420px 1fr } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3 6.5C3 5.12 4.12 4 5.5 4h13A2.5 2.5 0 0 1 21 6.5V17a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6.5Z" stroke="#ffd84d" stroke-width="1.5"/><path d="M6.5 7.5h11M6.5 11.5h11M6.5 15.5h7" stroke="#ffd84d" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <h1>Jeopardy! – Lokal webbapp</h1>
+    </div>
+
+    <nav class="tabs" role="tablist" aria-label="Lägen">
+      <button class="tab" id="tab-editor" role="tab" aria-selected="true" aria-controls="panel-editor">Förbered rutor</button>
+      <button class="tab" id="tab-play" role="tab" aria-selected="false" aria-controls="panel-play">Spelläge</button>
+      <button class="tab" id="tab-buzzer" role="tab" aria-selected="false" aria-controls="panel-buzzer">Buzzer</button>
+    </nav>
+
+    <div class="net">
+      <select id="role-select" class="input" style="width:auto">
+        <option value="host">Värd</option>
+        <option value="buzzer">Buzzer</option>
+      </select>
+      <input id="player-name" class="input" style="width:160px" placeholder="Ditt namn" value="Spelare" />
+      <span class="status" id="net-status"><span class="dot" id="net-dot"></span> Ej ansluten</span>
+      <button class="btn secondary" id="btn-connect">Anslut</button>
+    </div>
+
+    <div class="actions">
+      <button class="btn secondary" id="btn-fullscreen" title="Helskärm (F)">Helskärm</button>
+      <button class="btn secondary" id="btn-reset-board" title="Återställ använd status på alla rutor">Återställ rutor</button>
+      <button class="btn" id="btn-save">Spara</button>
+      <button class="btn ghost" id="btn-load">Ladda</button>
+      <button class="btn ghost" id="btn-export">Exportera JSON</button>
+      <label class="btn ghost" for="file-import" style="cursor:pointer">Importera JSON</label>
+      <input id="file-import" type="file" accept="application/json" hidden />
+    </div>
+  </header>
+
+  <main>
+    <!-- SCOREBOARD -->
+    <section class="scoreboard" aria-label="Poängtavla" id="scoreboard">
+      <div class="team" data-team-index="0">
+        <input class="team-name" value="Lag 1" aria-label="Lagnamn" />
+        <div class="score" data-score>0</div>
+        <div class="score-controls">
+          <input type="number" min="0" step="50" value="100" aria-label="Steg" />
+          <button class="btn secondary" data-dec>-</button>
+          <button class="btn secondary" data-inc>+</button>
+          <button class="btn ghost" data-remove>Ta bort</button>
+        </div>
+      </div>
+      <div class="team" data-team-index="1">
+        <input class="team-name" value="Lag 2" aria-label="Lagnamn" />
+        <div class="score" data-score>0</div>
+        <div class="score-controls">
+          <input type="number" min="0" step="50" value="100" aria-label="Steg" />
+          <button class="btn secondary" data-dec>-</button>
+          <button class="btn secondary" data-inc>+</button>
+          <button class="btn ghost" data-remove>Ta bort</button>
+        </div>
+      </div>
+      <button class="btn ghost" id="btn-add-team">+ Lägg till lag</button>
+    </section>
+
+    <!-- PLAY PANEL -->
+    <section id="panel-play" role="tabpanel" aria-labelledby="tab-play" hidden>
+      <div class="board-wrap">
+        <div class="small">Tips: klicka en ruta för att visa frågan. <span class="kbd">Mellanslag</span> = visa/dölj svar, <span class="kbd">T</span> = starta/stoppa timer, <span class="kbd">Esc</span> = stäng.</div>
+        <div class="board" id="board" style="--cols:5"></div>
+      </div>
+
+      <div class="fieldset" id="buzzer-host-controls">
+        <h3>Buzzer-kontroll (LAN)</h3>
+        <div class="small">Välj roll <strong>Värd</strong> och klicka <em>Anslut</em> för att styra buzzers. Deltagare väljer <strong>Buzzer</strong> och ansluter från sina mobiler.</div>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px">
+          <button class="btn ok" id="btn-arm">Öppna för buzz</button>
+          <button class="btn secondary" id="btn-reset-buzzers">Reset</button>
+          <div>Först att trycka: <strong id="first-buzzer">–</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- EDITOR PANEL -->
+    <section id="panel-editor" role="tabpanel" aria-labelledby="tab-editor">
+      <div class="editor-grid">
+        <div class="fieldset">
+          <h3>Inställningar</h3>
+          <label class="small">Antal kategorier (3–8)</label>
+          <input id="num-cats" class="input" type="number" min="3" max="8" value="5" />
+          <label class="small">Antal rader (3–7)</label>
+          <input id="num-rows" class="input" type="number" min="3" max="7" value="5" />
+          <div class="editor-toolbar">
+            <button class="btn secondary" id="btn-apply-structure">Uppdatera rutnät</button>
+            <button class="btn ghost" id="btn-autofill-values">Autofyll poäng (100–500)</button>
+            <button class="btn ghost" id="btn-new-game">Nytt spel</button>
+          </div>
+        </div>
+        <div class="fieldset cat-editor">
+          <h3>Kategorier & rutor</h3>
+          <div id="cat-list" class="cat-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BUZZER PANEL (client) -->
+    <section id="panel-buzzer" role="tabpanel" aria-labelledby="tab-buzzer" hidden>
+      <div class="buzzer-hero">
+        <button class="buzz-btn" id="btn-buzz" disabled>BUZZ!</button>
+        <div class="buzz-status" id="buzzer-info">Anslut som <strong>Buzzer</strong> och vänta tills värden öppnar.</div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="dlg">
+    <div class="modal-header">
+      <div class="modal-title" id="dlg-title">Ruta</div>
+      <div class="modal-controls">
+        <button class="btn secondary" id="btn-timer">⏱ <span class="timer" id="timer">30</span>s</button>
+        <button class="btn secondary" id="btn-toggle-answer">Visa svar</button>
+        <button class="btn bad" id="btn-close">Stäng</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="small" id="dd-banner" hidden>🎯 Daily Double! Använd insats i stället för ordinarie poäng.</div>
+      <div class="q" id="dlg-q"></div>
+      <div class="a" id="dlg-a"></div>
+
+      <div class="buzzer-controls" id="buzzer-in-modal">
+        <div class="buzzer-row"><strong>Status:</strong> <span id="modal-buzz-status">Väntar på öppning…</span></div>
+        <div class="buzzer-row">Först att trycka: <strong id="modal-first">–</strong></div>
+        <div class="buzzer-row">
+          <label>Lag för svarande:&nbsp;
+            <select id="modal-team-select" class="input" style="width:auto"></select>
+          </label>
+        </div>
+        <div class="btn-row">
+          <button class="btn ok" id="btn-mark-correct" disabled>✔ Rätt (tilldela poäng)</button>
+          <button class="btn bad" id="btn-mark-wrong" disabled>✖ Fel (dra poäng & öppna igen)</button>
+          <button class="btn secondary" id="btn-arm-modal">Öppna för buzz</button>
+          <button class="btn secondary" id="btn-reset-modal">Reset</button>
+        </div>
+      </div>
+
+      <div class="award">
+        <span>Poäng:</span>
+        <input id="award-points" class="input" type="number" min="-5000" step="50" value="100" style="width:120px" />
+        <div class="players-inline" id="players-inline"></div>
+      </div>
+    </div>
+  </dialog>
+
+  <footer>
+    Kör helt lokalt. Sparar till <em>localStorage</em>. Tangenter: <span class="kbd">F</span> helskärm, <span class="kbd">Mellanslag</span> svar, <span class="kbd">T</span> timer, <span class="kbd">Esc</span> stäng modal. LAN-buzzer kräver en liten WebSocket-server (se instruktioner i chatten).
+  </footer>
+
+  <script>
+    // ---------------------- DATA & STATE ----------------------
+    const storageKeys = {
+      game: 'jeopardyGameDataV1',
+      players: 'jeopardyPlayersV1',
+      used: 'jeopardyUsedTilesV1',
+      map: 'jeopardyBuzzerTeamMapV1'
+    };
+
+    function defaultGameData(cols=5, rows=5){
+      const cats = Array.from({length: cols}, (_,c)=>({
+        title: `Kategori ${c+1}`,
+        clues: Array.from({length: rows}, (_,r)=>({ value: (r+1)*100, question: '', answer: '', dd:false }))
+      }));
+      return { cols, rows, categories: cats };
+    }
+
+    let game = load(storageKeys.game) || defaultGameData();
+    let used = load(storageKeys.used) || {}; // key "c-r" => true
+    let teams = load(storageKeys.players) || [ {name:'Lag 1', score:0}, {name:'Lag 2', score:0} ];
+    let buzzerTeamMap = load(storageKeys.map) || {}; // name -> teamIndex
+
+    // Role & network
+    let role = 'host';
+    let myName = 'Spelare';
+    let ws = null; let wsConnected=false; let armed=false; let winner=null;
+
+    // ---------------------- UTIL ----------------------
+    function save(key, data){ localStorage.setItem(key, JSON.stringify(data)); }
+    function load(key){ try{ return JSON.parse(localStorage.getItem(key)); }catch{ return null; } }
+    function download(filename, text){ const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], {type:'application/json'})); a.download = filename; a.click(); URL.revokeObjectURL(a.href); }
+
+    function setNetStatus(ok){ wsConnected = ok; const dot = document.getElementById('net-dot'); const label = document.getElementById('net-status'); dot.className = 'dot ' + (ok?'ok':'bad'); label.lastChild && (label.lastChild.textContent = (ok?' Ansluten':' Ej ansluten')); }
+
+    function connectWS(){ try{ if(ws){ ws.close(); ws=null; } }catch{}
+      const url = `ws://${location.hostname}:3001`; // samma värd, port 3001
+      ws = new WebSocket(url);
+      ws.onopen = ()=>{ setNetStatus(true); send({type:'hello', role, name: myName}); };
+      ws.onclose = ()=>{ setNetStatus(false); };
+      ws.onerror = ()=>{ setNetStatus(false); };
+      ws.onmessage = (ev)=>{ try{ const m = JSON.parse(ev.data); handleMsg(m); }catch{} };
+    }
+    function send(obj){ try{ ws?.readyState===1 && ws.send(JSON.stringify(obj)); }catch{} }
+
+    function handleMsg(m){
+      if(m.type==='armed'){
+        armed = !!m.armed; updateBuzzerUI(); updateModalBuzzerUI();
+      }
+      if(m.type==='buzzed'){
+        winner = m.by; document.getElementById('first-buzzer').textContent = winner || '–';
+        document.getElementById('buzzer-info').innerHTML = winner? `Först: <strong>${winner}</strong>` : '—';
+        if(current){ document.getElementById('modal-first').textContent = winner || '–'; guessAndSelectTeamFor(winner); setResultButtonsEnabled(true); }
+        updateBuzzerUI(); updateModalBuzzerUI(); beep();
+      }
+      if(m.type==='reset'){
+        winner = null; document.getElementById('first-buzzer').textContent = '–'; document.getElementById('buzzer-info').textContent = 'Väntar på att värden öppnar…';
+        if(current){ document.getElementById('modal-first').textContent = '–'; setResultButtonsEnabled(false); }
+        updateBuzzerUI(); updateModalBuzzerUI();
+      }
+      if(m.type==='state'){
+        armed = !!m.armed; winner = m.winner?.name || null; document.getElementById('first-buzzer').textContent = winner || '–';
+        if(current){ document.getElementById('modal-first').textContent = winner || '–'; }
+        updateBuzzerUI(); updateModalBuzzerUI();
+      }
+    }
+
+    function beep(){ try{ const ctx = new (window.AudioContext||window.webkitAudioContext)(); const o = ctx.createOscillator(); const g = ctx.createGain(); o.type='square'; o.frequency.value=900; o.connect(g); g.connect(ctx.destination); g.gain.value=0.05; o.start(); setTimeout(()=>{ o.stop(); ctx.close(); }, 150); }catch{}
+    }
+
+    // ---------------------- SCOREBOARD ----------------------
+    const scoreboardEl = document.getElementById('scoreboard');
+    function renderTeams(){
+      [...scoreboardEl.querySelectorAll('.team')].forEach(el=>el.remove());
+      teams.forEach((t, i)=>{
+        const card = document.createElement('div');
+        card.className='team'; card.dataset.teamIndex=i;
+        card.innerHTML = `
+          <input class="team-name" value="${t.name}" aria-label="Lagnamn" />
+          <div class="score" data-score>${t.score}</div>
+          <div class="score-controls">
+            <input type="number" min="0" step="50" value="100" aria-label="Steg" />
+            <button class="btn secondary" data-dec>-</button>
+            <button class="btn secondary" data-inc>+</button>
+            <button class="btn ghost" data-remove>Ta bort</button>
+          </div>`;
+        scoreboardEl.insertBefore(card, document.getElementById('btn-add-team'));
+      });
+      bindTeamEvents(); save(storageKeys.players, teams);
+      refreshModalTeamSelect();
+    }
+    function bindTeamEvents(){
+      scoreboardEl.querySelectorAll('.team').forEach(card=>{
+        const i = +card.dataset.teamIndex;
+        const stepEl = card.querySelector('input[type="number"]');
+        card.querySelector('[data-inc]').onclick = ()=>{ teams[i].score += +stepEl.value || 0; renderTeams(); };
+        card.querySelector('[data-dec]').onclick = ()=>{ teams[i].score -= +stepEl.value || 0; renderTeams(); };
+        card.querySelector('[data-remove]').onclick = ()=>{ teams.splice(i,1); renderTeams(); };
+        card.querySelector('.team-name').oninput = (e)=>{ teams[i].name = e.target.value; save(storageKeys.players, teams); refreshModalTeamSelect(); };
+      });
+    }
+    document.getElementById('btn-add-team').onclick = ()=>{ teams.push({name:`Lag ${teams.length+1}`, score:0}); renderTeams(); };
+
+    // ---------------------- BOARD (PLAY) ----------------------
+    const boardEl = document.getElementById('board');
+    function renderBoard(){
+      boardEl.style.setProperty('--cols', game.cols); boardEl.innerHTML = '';
+      for(let c=0;c<game.cols;c++){
+        const cat = document.createElement('div'); cat.className='category'; cat.textContent = game.categories[c]?.title || `Kategori ${c+1}`; boardEl.appendChild(cat);
+      }
+      for(let r=0;r<game.rows;r++){
+        for(let c=0;c<game.cols;c++){
+          const clue = game.categories[c]?.clues?.[r];
+          const tile = document.createElement('button'); tile.className = 'tile'; const key = `${c}-${r}`;
+          if(used[key]) tile.classList.add('used'); tile.disabled = !!used[key];
+          tile.innerHTML = clue?.value ? `${clue.value}` : '—'; tile.title = `Kategori: ${game.categories[c]?.title || ''}`;
+          tile.onclick = ()=> openClue(c,r); boardEl.appendChild(tile);
+        }
+      }
+    }
+
+    // ---------------------- EDITOR ----------------------
+    const catListEl = document.getElementById('cat-list');
+    function renderEditor(){
+      document.getElementById('num-cats').value = game.cols; document.getElementById('num-rows').value = game.rows; catListEl.innerHTML='';
+      for(let c=0;c<game.cols;c++){
+        const card = document.createElement('div'); card.className='cat-card'; const titleId = `cat-title-${c}`;
+        card.innerHTML = `
+          <div class="cat-row">
+            <input id="${titleId}" class="input" value="${game.categories[c]?.title || ''}" placeholder="Kategorititel" />
+            <label class="small"><input type="checkbox" id="autofill-${c}"> Autofyll rader</label>
+            <button class="btn ghost" data-insert-row>+ Rad</button>
+            <button class="btn ghost" data-remove-cat>Ta bort</button>
+          </div>
+          <div class="tile-forms" id="tiles-${c}"></div>`;
+        catListEl.appendChild(card);
+        card.querySelector(`#${titleId}`).oninput = (e)=>{ game.categories[c].title = e.target.value; save(storageKeys.game, game); renderBoard(); };
+        card.querySelector('[data-remove-cat]').onclick = ()=>{ if(game.cols>3){ game.categories.splice(c,1); game.cols--; save(storageKeys.game, game); renderEditor(); renderBoard(); } };
+        card.querySelector('[data-insert-row]').onclick = ()=>{ if(game.rows<7){ game.categories[c].clues.push({value: (game.rows+1)*100, question:'', answer:'', dd:false}); if(c===0) game.rows++; save(storageKeys.game, game); renderEditor(); renderBoard(); } };
+        renderTileForms(c);
+      }
+    }
+    function renderTileForms(c){
+      const wrap = document.getElementById(`tiles-${c}`); wrap.innerHTML='';
+      for(let r=0;r<game.rows;r++){
+        if(!game.categories[c].clues[r]) game.categories[c].clues[r] = {value:(r+1)*100, question:'', answer:'', dd:false};
+        const clue = game.categories[c].clues[r];
+        const row = document.createElement('div'); row.className='tile-form';
+        row.innerHTML = `
+          <input type="number" min="0" step="50" value="${clue.value}" title="Poängvärde" />
+          <textarea placeholder="Ledtråd / fråga">${clue.question||''}</textarea>
+          <textarea placeholder="Svar">${clue.answer||''}</textarea>
+          <label class="small" title="Daily Double"><input type="checkbox" ${clue.dd?'checked':''}/> DD</label>`;
+        const [vEl,qEl,aEl,ddEl] = row.children;
+        vEl.oninput = (e)=>{ clue.value = +e.target.value||0; save(storageKeys.game, game); renderBoard(); };
+        qEl.oninput = (e)=>{ clue.question = e.target.value; save(storageKeys.game, game); };
+        aEl.oninput = (e)=>{ clue.answer = e.target.value; save(storageKeys.game, game); };
+        ddEl.querySelector('input').onchange = (e)=>{ clue.dd = !!e.target.checked; save(storageKeys.game, game); };
+        wrap.appendChild(row);
+      }
+    }
+
+    document.getElementById('btn-apply-structure').onclick = ()=>{
+      const cols = Math.min(8, Math.max(3, +document.getElementById('num-cats').value||5));
+      const rows = Math.min(7, Math.max(3, +document.getElementById('num-rows').value||5));
+      const oldCats = game.categories;
+      const newCats = Array.from({length: cols}, (_,i)=> oldCats[i] ? {
+        title: oldCats[i].title,
+        clues: Array.from({length: rows}, (_,r)=> oldCats[i].clues[r] || {value:(r+1)*100, question:'', answer:'', dd:false})
+      } : { title:`Kategori ${i+1}`, clues: Array.from({length: rows}, (_,r)=>({value:(r+1)*100, question:'', answer:'', dd:false})) });
+      game = { cols, rows, categories: newCats };
+      used = {}; save(storageKeys.game, game); save(storageKeys.used, used);
+      renderEditor(); renderBoard();
+    };
+
+    document.getElementById('btn-autofill-values').onclick = ()=>{
+      for(const cat of game.categories){ cat.clues.forEach((clue, r)=>{ clue.value = (r+1)*100; }); }
+      save(storageKeys.game, game); renderEditor(); renderBoard();
+    };
+    document.getElementById('btn-new-game').onclick = ()=>{
+      if(confirm('Återställ allt och börja från tom mall?')){
+        game = defaultGameData(); teams = [{name:'Lag 1', score:0},{name:'Lag 2', score:0}]; used={};
+        save(storageKeys.game, game); save(storageKeys.players, teams); save(storageKeys.used, used);
+        renderTeams(); renderEditor(); renderBoard();
+      }
+    };
+
+    // ---------------------- MODAL / CLUE FLOW ----------------------
+    const dlg = document.getElementById('dlg');
+    const dlgTitle = document.getElementById('dlg-title');
+    const dlgQ = document.getElementById('dlg-q');
+    const dlgA = document.getElementById('dlg-a');
+    const ddBanner = document.getElementById('dd-banner');
+    const awardPointsEl = document.getElementById('award-points');
+    const playersInline = document.getElementById('players-inline');
+    const timerBtn = document.getElementById('btn-timer');
+    const timerEl = document.getElementById('timer');
+    const toggleAnswerBtn = document.getElementById('btn-toggle-answer');
+
+    // Modal buzzer controls
+    const modalBuzzStatus = document.getElementById('modal-buzz-status');
+    const modalFirst = document.getElementById('modal-first');
+    const modalTeamSelect = document.getElementById('modal-team-select');
+    const btnMarkCorrect = document.getElementById('btn-mark-correct');
+    const btnMarkWrong   = document.getElementById('btn-mark-wrong');
+    const btnArmModal    = document.getElementById('btn-arm-modal');
+    const btnResetModal  = document.getElementById('btn-reset-modal');
+
+    let current = null; // {c,r}
+    let timer = null; let remaining = 30;
+
+    function renderPlayersInline(){
+      playersInline.innerHTML='';
+      teams.forEach((t,i)=>{
+        const ok = document.createElement('button'); ok.className='btn ok'; ok.textContent=`${t.name} ✔`;
+        ok.onclick = ()=>{ adjustScore(i, +awardPointsEl.value||0); closeClue(true); send({type:'reset'}); };
+        const bad = document.createElement('button'); bad.className='btn bad'; bad.textContent=`${t.name} ✖`;
+        bad.onclick = ()=>{ adjustScore(i, -(+awardPointsEl.value||0)); };
+        playersInline.append(ok, bad);
+      });
+    }
+    function adjustScore(i, delta){ teams[i].score += delta; renderTeams(); }
+
+    function refreshModalTeamSelect(){
+      modalTeamSelect.innerHTML = '';
+      teams.forEach((t, idx)=>{
+        const opt = document.createElement('option'); opt.value = idx; opt.textContent = t.name; modalTeamSelect.appendChild(opt);
+      });
+    }
+
+    function guessTeamIndexFor(name){
+      if(name && buzzerTeamMap[name] != null && teams[buzzerTeamMap[name]]) return buzzerTeamMap[name];
+      if(!name) return 0;
+      // exakt match (case-insensitiv) mot lagnamn
+      const low = name.toLowerCase();
+      for(let i=0;i<teams.length;i++) if(teams[i].name.toLowerCase()===low) return i;
+      // substring match
+      for(let i=0;i<teams.length;i++) if(low.includes(teams[i].name.toLowerCase())) return i;
+      return 0;
+    }
+
+    function guessAndSelectTeamFor(name){
+      const idx = guessTeamIndexFor(name);
+      modalTeamSelect.value = String(idx);
+    }
+
+    function setResultButtonsEnabled(on){ btnMarkCorrect.disabled = !on; btnMarkWrong.disabled = !on; }
+
+    function openClue(c,r){
+      const clue = game.categories[c]?.clues?.[r]; if(!clue || used[`${c}-${r}`]) return;
+      current = {c,r}; dlgTitle.textContent = `${game.categories[c].title} – ${clue.value}p`;
+      dlgQ.textContent = clue.question || '(ingen ledtråd angiven)';
+      dlgA.textContent = clue.answer || '(inget svar angivet)'; dlgA.classList.remove('revealed');
+      ddBanner.hidden = !clue.dd; awardPointsEl.value = clue.value; renderPlayersInline();
+      remaining = 30; timerEl.textContent = remaining; stopTimer();
+
+      // Nollställ modal-buzzerstatus
+      winner = null; modalFirst.textContent = '–'; setResultButtonsEnabled(false);
+      updateModalBuzzerUI();
+
+      dlg.showModal();
+
+      // Öppna för buzz automatiskt när frågan öppnas (om värd)
+      if(role==='host') setTimeout(()=> send({type:'arm'}), 100);
+
+      if(clue.dd){ setTimeout(()=>{ const v = prompt('Daily Double! Ange insats i poäng:', String(clue.value)); if(v!==null){ const x = parseInt(v,10); if(!Number.isNaN(x)) awardPointsEl.value = x; } }, 120); }
+    }
+
+    function closeClue(markUsed){ if(current && markUsed){ used[`${current.c}-${current.r}`]=true; save(storageKeys.used, used); renderBoard(); } dlg.close(); stopTimer(); current=null; }
+    function startTimer(){ if(timer) return; timer = setInterval(()=>{ remaining--; timerEl.textContent = remaining; if(remaining<=0){ stopTimer(); } }, 1000); }
+    function stopTimer(){ if(timer){ clearInterval(timer); timer=null; } }
+    document.getElementById('btn-close').onclick = ()=> closeClue(false);
+    toggleAnswerBtn.onclick = ()=>{ dlgA.classList.toggle('revealed'); toggleAnswerBtn.textContent = dlgA.classList.contains('revealed')? 'Dölj svar' : 'Visa svar'; };
+    timerBtn.onclick = ()=>{ if(timer) stopTimer(); else startTimer(); };
+    dlg.addEventListener('keydown', (e)=>{
+      if(e.key===' '){ e.preventDefault(); toggleAnswerBtn.click(); }
+      if(e.key==='t' || e.key==='T'){ e.preventDefault(); timerBtn.click(); }
+      if(e.key==='y' || e.key==='Y'){ if(!btnMarkCorrect.disabled) btnMarkCorrect.click(); }
+      if(e.key==='n' || e.key==='N'){ if(!btnMarkWrong.disabled) btnMarkWrong.click(); }
+      if(e.key==='Escape'){ e.preventDefault(); closeClue(false); }
+    });
+
+    // Resultatknappar i modal
+    btnMarkCorrect.onclick = ()=>{
+      if(!winner) return;
+      const teamIdx = +modalTeamSelect.value || 0; const pts = +awardPointsEl.value||0;
+      adjustScore(teamIdx, pts);
+      // spara mappning
+      if(winner!=null){ buzzerTeamMap[winner] = teamIdx; save(storageKeys.map, buzzerTeamMap); }
+      send({type:'reset'}); // stäng buzzers
+      closeClue(true);     // markera rutan använd och stäng
+    };
+    btnMarkWrong.onclick = ()=>{
+      if(!winner) return;
+      const teamIdx = +modalTeamSelect.value || 0; const pts = +awardPointsEl.value||0;
+      adjustScore(teamIdx, -pts);
+      if(winner!=null){ buzzerTeamMap[winner] = teamIdx; save(storageKeys.map, buzzerTeamMap); }
+      // Öppna för ny buzz direkt
+      winner = null; modalFirst.textContent = '–'; setResultButtonsEnabled(false);
+      send({type:'arm'});
+    };
+
+    btnArmModal.onclick = ()=> send({type:'arm'});
+    btnResetModal.onclick = ()=> send({type:'reset'});
+
+    function updateModalBuzzerUI(){
+      modalBuzzStatus.textContent = armed ? (winner? 'Låst – svar väntar' : 'Öppet – vänta på buzz') : 'Stängt – klicka "Öppna för buzz"';
+    }
+
+    // ---------------------- TABS ----------------------
+    const tabEditor = document.getElementById('tab-editor');
+    const tabPlay = document.getElementById('tab-play');
+    const tabBuzzer = document.getElementById('tab-buzzer');
+    const panelEditor = document.getElementById('panel-editor');
+    const panelPlay = document.getElementById('panel-play');
+    const panelBuzzer = document.getElementById('panel-buzzer');
+
+    function activateTab(which){
+      tabEditor.setAttribute('aria-selected', which==='editor');
+      tabPlay.setAttribute('aria-selected', which==='play');
+      tabBuzzer.setAttribute('aria-selected', which==='buzzer');
+      panelEditor.hidden = which!=='editor';
+      panelPlay.hidden = which!=='play';
+      panelBuzzer.hidden = which!=='buzzer';
+    }
+    tabEditor.onclick = ()=> activateTab('editor');
+    tabPlay.onclick = ()=> activateTab('play');
+    tabBuzzer.onclick = ()=> activateTab('buzzer');
+
+    // ---------------------- NETWORK UI ----------------------
+    document.getElementById('role-select').onchange = (e)=>{ role = e.target.value; applyRole(); };
+    document.getElementById('player-name').oninput = (e)=>{ myName = e.target.value || 'Spelare'; };
+    document.getElementById('btn-connect').onclick = ()=> connectWS();
+
+    function applyRole(){
+      if(role==='buzzer') activateTab('buzzer'); else activateTab('editor');
+      document.getElementById('buzzer-host-controls').style.display = (role==='host')? 'block':'none';
+      document.getElementById('scoreboard').style.display = (role==='host')? 'flex':'none';
+    }
+
+    // Host controls for buzzers (panel)
+    document.getElementById('btn-arm').onclick = ()=> send({type:'arm'});
+    document.getElementById('btn-reset-buzzers').onclick = ()=> send({type:'reset'});
+    document.getElementById('btn-buzz').onclick = ()=>{ if(armed) { send({type:'buzz'}); document.getElementById('btn-buzz').disabled = true; } };
+
+    function updateBuzzerUI(){
+      const btn = document.getElementById('btn-buzz');
+      if(role==='buzzer'){
+        btn.disabled = !armed || !!winner; // låst om inte armerad eller om någon redan vunnit
+        document.getElementById('buzzer-info').textContent = armed ? (winner? `Först: ${winner}` : 'Öppet! Tryck BUZZ!') : 'Väntar på att värden öppnar…';
+      }
+      if(role==='host'){
+        document.getElementById('first-buzzer').textContent = winner || '–';
+      }
+    }
+
+    // ---------------------- GLOBAL ACTIONS ----------------------
+    document.getElementById('btn-save').onclick = ()=>{ save(storageKeys.game, game); save(storageKeys.players, teams); save(storageKeys.used, used); save(storageKeys.map, buzzerTeamMap); alert('Sparat.'); };
+    document.getElementById('btn-load').onclick = ()=>{ const g = load(storageKeys.game); const t = load(storageKeys.players); const u = load(storageKeys.used); const m = load(storageKeys.map); if(g){ game=g; } if(t){ teams=t; } if(u){ used=u; } if(m){ buzzerTeamMap=m; } renderTeams(); renderEditor(); renderBoard(); alert('Laddat.'); };
+    document.getElementById('btn-export').onclick = ()=>{ download('jeopardy-spel.json', JSON.stringify({game, teams, used, buzzerTeamMap}, null, 2)); };
+    document.getElementById('file-import').onchange = (e)=>{ const file = e.target.files[0]; if(!file) return; const reader = new FileReader(); reader.onload = ()=>{ try{ const data = JSON.parse(reader.result); if(data.game) game=data.game; if(data.teams) teams=data.teams; if(data.used) used=data.used; if(data.buzzerTeamMap) buzzerTeamMap=data.buzzerTeamMap; save(storageKeys.game, game); save(storageKeys.players, teams); save(storageKeys.used, used); save(storageKeys.map, buzzerTeamMap); renderTeams(); renderEditor(); renderBoard(); alert('Importerade data.'); }catch(err){ alert('Ogiltig JSON.'); } }; reader.readAsText(file); e.target.value=''; };
+    document.getElementById('btn-reset-board').onclick = ()=>{ if(confirm('Återställ använda rutor?')){ used={}; save(storageKeys.used, used); renderBoard(); } };
+    document.getElementById('btn-fullscreen').onclick = ()=>{ const el = document.documentElement; if(!document.fullscreenElement){ el.requestFullscreen?.(); } else { document.exitFullscreen?.(); } };
+    document.addEventListener('keydown', (e)=>{ if(e.key==='f' || e.key==='F'){ document.getElementById('btn-fullscreen').click(); } });
+
+    // ---------------------- INIT ----------------------
+    function init(){ renderTeams(); renderEditor(); renderBoard(); applyRole(); setNetStatus(false); refreshModalTeamSelect(); }
+    init();
+  </script>
+</body>
+</html>
