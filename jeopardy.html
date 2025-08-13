@@ -106,9 +106,9 @@
     .btn-row{ display:flex; gap:10px; flex-wrap:wrap }
 
     /* Buzzer */
-    #panel-buzzer{ display:grid; place-items:center }
+    #panel-buzzer{ display:grid; place-items:center; min-height:calc(100vh - 120px) }
     .buzzer-hero{ display:grid; gap:18px; place-items:center; width:100% }
-    .buzz-btn{ font-size: clamp(28px, 8vw, 72px); padding: clamp(18px, 4vw, 28px) clamp(28px, 8vw, 64px); border-radius:1000px; background:radial-gradient(circle at 30% 30%, #ff7676, #e11d48); border:none; color:#fff; font-weight:900; box-shadow:0 10px 30px rgba(225,29,72,.55); cursor:pointer; }
+    .buzz-btn{ font-size: clamp(28px, 8vw, 72px); padding: clamp(18px, 4vw, 28px) clamp(28px, 8vw, 64px); border-radius:1000px; background:radial-gradient(circle at 30% 30%, #ff7676, #e11d48); border:none; color:#fff; font-weight:900; box-shadow:0 10px 30px rgba(225,29,72,.55); cursor:pointer; width:100%; max-width:480px; }
     .buzz-btn:disabled{ filter:grayscale(1); opacity:.6; cursor:not-allowed }
     .buzz-status{ font-size:clamp(16px, 2.2vw, 22px); color:var(--muted) }
 
@@ -613,6 +613,13 @@
     document.getElementById('btn-arm').onclick = ()=> send({type:'arm'});
     document.getElementById('btn-reset-buzzers').onclick = ()=> send({type:'reset'});
     document.getElementById('btn-buzz').onclick = ()=>{ if(armed) { send({type:'buzz'}); document.getElementById('btn-buzz').disabled = true; } };
+    const panel = document.getElementById('panel-buzzer');
+    function triggerBuzz(){
+      const btn = document.getElementById('btn-buzz');
+      if(role==='buzzer' && !btn.disabled){ btn.click(); }
+    }
+    panel.addEventListener('click', (e)=>{ if(!e.target.closest('#btn-buzz')) triggerBuzz(); });
+    panel.addEventListener('touchstart', (e)=>{ if(!e.target.closest('#btn-buzz')) triggerBuzz(); }, {passive:true});
 
     function updateBuzzerUI(){
       const btn = document.getElementById('btn-buzz');
