@@ -248,16 +248,31 @@
       refreshModalTeamSelect();
     }
     function bindTeamEvents(){
+      const allow = role === 'host';
       scoreboardEl.querySelectorAll('.team').forEach(card=>{
         const i = +card.dataset.teamIndex;
         const stepEl = card.querySelector('input[type="number"]');
-        card.querySelector('[data-inc]').onclick = ()=>{ teams[i].score += +stepEl.value || 0; renderTeams(); };
-        card.querySelector('[data-dec]').onclick = ()=>{ teams[i].score -= +stepEl.value || 0; renderTeams(); };
-        card.querySelector('[data-remove]').onclick = ()=>{ teams.splice(i,1); renderTeams(); };
-        card.querySelector('.team-name').oninput = (e)=>{ teams[i].name = e.target.value; save(storageKeys.players, teams); refreshModalTeamSelect(); };
+        const inc = card.querySelector('[data-inc]');
+        const dec = card.querySelector('[data-dec]');
+        const remove = card.querySelector('[data-remove]');
+        const name = card.querySelector('.team-name');
+
+        [stepEl, inc, dec, remove, name].forEach(el=> el.disabled = !allow);
+
+        if(!allow){
+          inc.onclick = dec.onclick = remove.onclick = null;
+          name.oninput = null;
+          return;
+        }
+
+        inc.onclick = ()=>{ teams[i].score += +stepEl.value || 0; renderTeams(); };
+        dec.onclick = ()=>{ teams[i].score -= +stepEl.value || 0; renderTeams(); };
+        remove.onclick = ()=>{ teams.splice(i,1); renderTeams(); };
+        name.oninput = (e)=>{ teams[i].name = e.target.value; save(storageKeys.players, teams); refreshModalTeamSelect(); };
       });
+      document.getElementById('btn-add-team').disabled = !allow;
     }
-    document.getElementById('btn-add-team').onclick = ()=>{ teams.push({name:`Lag ${teams.length+1}`, score:0}); renderTeams(); };
+    document.getElementById('btn-add-team').onclick = ()=>{ if(role!=='host') return; teams.push({name:`Lag ${teams.length+1}`, score:0}); renderTeams(); };
 
     // ---------------------- BOARD (PLAY) ----------------------
     const boardEl = document.getElementById('board');
@@ -377,7 +392,7 @@
         playersInline.append(ok, bad);
       });
     }
-    function adjustScore(i, delta){ teams[i].score += delta; renderTeams(); }
+    function adjustScore(i, delta){ if(role!=='host') return; teams[i].score += delta; renderTeams(); }
 
     function refreshModalTeamSelect(){
       modalTeamSelect.innerHTML = '';
@@ -494,6 +509,7 @@
       if(role==='buzzer') activateTab('buzzer'); else activateTab('editor');
       document.getElementById('buzzer-host-controls').style.display = (role==='host')? 'block':'none';
       document.getElementById('scoreboard').style.display = (role==='host')? 'flex':'none';
+      bindTeamEvents();
     }
 
     // Host controls for buzzers (panel)
