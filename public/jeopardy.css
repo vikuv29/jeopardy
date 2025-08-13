@@ -55,7 +55,8 @@
     .scoreboard{ display:flex; gap:12px; flex-wrap:wrap; align-items:stretch }
     .team{ background:var(--card); border:1px solid rgba(255,255,255,.08); border-radius:var(--radius); padding:12px; min-width:200px; box-shadow:var(--shadow); display:grid; gap:10px; align-content:start }
     .team header{position:unset; background:transparent; padding:0; border:none}
-    .team-name{ font-weight:800; font-size:18px; outline:none; border:none; width:100%; color:var(--text); background:transparent; border-bottom:1px dashed rgba(255,255,255,.18); padding-bottom:4px }
+    .team-name{ font-weight:800; font-size:18px; border:none; width:100%; color:var(--text); background:transparent; border-bottom:1px dashed rgba(255,255,255,.18); padding-bottom:4px }
+    .team-name:focus{ outline:2px solid var(--accent); }
     .score{font-size:28px; font-weight:900}
     .score-controls{display:flex; gap:8px; flex-wrap:wrap}
     .score-controls input{width:90px; background:#0e1735; color:var(--text); border:1px solid rgba(255,255,255,.12); border-radius:8px; padding:8px}
