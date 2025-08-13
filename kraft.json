@@ -1,0 +1,195 @@
+{
+  "game": {
+    "cols": 5,
+    "rows": 5,
+    "categories": [
+      {
+        "title": "Kräftkunskap",
+        "clues": [
+          {
+            "value": 100,
+            "question": "Vad är dillkronor?",
+            "answer": "Den del av dillen som ger kräftlagen sin typiska smak och doft.",
+            "dd": false
+          },
+          {
+            "value": 200,
+            "question": "Vad är signalkräfta?",
+            "answer": "Den nordamerikanska art som i dag är vanligast i svenska fångster och känns igen på den ljusa \"signalen\" på klon.",
+            "dd": false
+          },
+          {
+            "value": 300,
+            "question": "Vad är flodkräfta?",
+            "answer": "Den inhemska svenska arten som är särskilt känslig för kräftpest.",
+            "dd": false
+          },
+          {
+            "value": 400,
+            "question": "Vad är leverbukspottkörteln (hepatopancreas)?",
+            "answer": "Det \"kräftsmör\" många rör ut i gräddfil sitter här inne i huvudet.",
+            "dd": false
+          },
+          {
+            "value": 500,
+            "question": "Vad är kräftpest?",
+            "answer": "Sjukdomen som orsakas av vattenmöglet Aphanomyces astaci och som slagit hårt mot flodkräftan.",
+            "dd": false
+          }
+        ]
+      },
+      {
+        "title": "Snaps & visor",
+        "clues": [
+          {
+            "value": 100,
+            "question": "Vad är \"Helan går\"?",
+            "answer": "Den mest sjungna snapsvisan i Sverige – ofta först på kvällen.",
+            "dd": false
+          },
+          {
+            "value": 200,
+            "question": "Vad är akvavit?",
+            "answer": "Kryddat brännvin – ofta med kummin och dill – som serveras iskall till kräftor.",
+            "dd": false
+          },
+          {
+            "value": 300,
+            "question": "Vad är att skåla med ögonkontakt?",
+            "answer": "Seden att möta bordsgrannens blick före och efter man säger \"Skål\".",
+            "dd": false
+          },
+          {
+            "value": 400,
+            "question": "Vad är Halvan?",
+            "answer": "Det traditionella namnet på snapsen som följer efter Helan.",
+            "dd": false
+          },
+          {
+            "value": 500,
+            "question": "Vad är Tersen?",
+            "answer": "Det traditionella namnet på den tredje snapsen.",
+            "dd": false
+          }
+        ]
+      },
+      {
+        "title": "Tillbehör & dukning",
+        "clues": [
+          {
+            "value": 100,
+            "question": "Vad är Västerbottensostpaj?",
+            "answer": "Den klassiska pajen på norrländsk hårdost som nästan alltid finns på bordet.",
+            "dd": false
+          },
+          {
+            "value": 200,
+            "question": "Vad är en haklapp?",
+            "answer": "Den papperspryl som skyddar skjortan från kladd.",
+            "dd": false
+          },
+          {
+            "value": 300,
+            "question": "Vad är kräftlyktor?",
+            "answer": "De färgglada papperslanternorna – ofta med månemotiv – som lyser upp kräftnatten.",
+            "dd": false
+          },
+          {
+            "value": 400,
+            "question": "Vad är gräddfil?",
+            "answer": "Syrad mjölkprodukt som många blandar med kräftsmör eller serverar som sval röra.",
+            "dd": false
+          },
+          {
+            "value": 500,
+            "question": "Vad är en kräftgaffel?",
+            "answer": "Det lilla specialverktyget för att pilla ut köttet ur klor och leder.",
+            "dd": false
+          }
+        ]
+      },
+      {
+        "title": "Svenska traditioner",
+        "clues": [
+          {
+            "value": 100,
+            "question": "Vad är augusti?",
+            "answer": "Månaden då de flesta kräftskivor brukar äga rum.",
+            "dd": false
+          },
+          {
+            "value": 200,
+            "question": "Vad är en partyhatt?",
+            "answer": "Den enkla papphatt som delas ut till gäster – ofta med kräftmotiv.",
+            "dd": false
+          },
+          {
+            "value": 300,
+            "question": "Vad är kräftpremiär?",
+            "answer": "Namnet på säsongens start för kräftfiske och servering som förr var hårt reglerad.",
+            "dd": false
+          },
+          {
+            "value": 400,
+            "question": "Vad är Bohuslän?",
+            "answer": "Västkustlandskapet som förknippas med skaldjursturer och havskräftor.",
+            "dd": false
+          },
+          {
+            "value": 500,
+            "question": "Vad är Havs- och vattenmyndigheten (HaV)?",
+            "answer": "Myndigheten som ger regler och råd kring fritidsfiske i sjöar och vattendrag.",
+            "dd": false
+          }
+        ]
+      },
+      {
+        "title": "Skaldjur i stort",
+        "clues": [
+          {
+            "value": 100,
+            "question": "Vad är \"Norway lobster\"?",
+            "answer": "Det engelska namnet på havskräfta (Nephrops norvegicus).",
+            "dd": false
+          },
+          {
+            "value": 200,
+            "question": "Vad är hummer?",
+            "answer": "Det stora skaldjur som är svartgrönt som levande men blir rött vid kokning.",
+            "dd": false
+          },
+          {
+            "value": 300,
+            "question": "Vad är kräftdjur (Crustacea)?",
+            "answer": "Den djurgrupp (klass) som kräftor, krabbor och räkor tillhör.",
+            "dd": false
+          },
+          {
+            "value": 400,
+            "question": "Vad är kalciumkarbonat?",
+            "answer": "Den mineral som bygger upp skalens hårdhet hos många skaldjur.",
+            "dd": false
+          },
+          {
+            "value": 500,
+            "question": "Vad är crustacyanin?",
+            "answer": "Namnet på proteinkomplexet som binder färgämnet astaxantin i råa skaldjur och gör dem mörka innan kokning.",
+            "dd": false
+          }
+        ]
+      }
+    ]
+  },
+  "teams": [
+    {
+      "name": "Lag 1",
+      "score": 0
+    },
+    {
+      "name": "Lag 2",
+      "score": 0
+    }
+  ],
+  "used": {},
+  "buzzerTeamMap": {}
+}
